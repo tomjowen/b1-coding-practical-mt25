@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import numpy as np
 import matplotlib.pyplot as plt
 from .terrain import generate_reference_and_limits
+from .control import Control
 
 class Submarine:
     def __init__(self):
@@ -75,12 +76,16 @@ class Mission:
 
     @classmethod
     def from_csv(cls, file_name: str):
-        # You are required to implement this method
-        pass
+        # Read csv file and parse data to local variables, skipping the first line (header)
+        reference = np.loadtxt(file_name, delimiter=',', usecols=0, skiprows=1)
+        cave_height = np.loadtxt(file_name, delimiter=',', usecols=1, skiprows=1)
+        cave_depth = np.loadtxt(file_name, delimiter=',', usecols=2, skiprows=1)
+
+        return cls(reference, cave_height, cave_depth)
 
 
 class ClosedLoop:
-    def __init__(self, plant: Submarine, controller):
+    def __init__(self, plant: Submarine, controller: Control):
         self.plant = plant
         self.controller = controller
 
@@ -97,7 +102,7 @@ class ClosedLoop:
         for t in range(T):
             positions[t] = self.plant.get_position()
             observation_t = self.plant.get_depth()
-            # Call your controller here
+            actions[t] = self.controller.get_action(observation_t, mission.reference[t])
             self.plant.transition(actions[t], disturbances[t])
 
         return Trajectory(positions)
